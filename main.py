@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# TODO: Implement logic to check if a given production is possible in a certain system given the planets in it
+# TODO: Implement logic to only render the image of the production chain for the target product nad ignore everything irrelevant
+
 from graphviz import Digraph
 import json
 
