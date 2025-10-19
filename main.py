@@ -1,6 +1,6 @@
 #!/bin/env python3
 
-import csv, glob, sys, json
+import csv, glob, os, sys, json
 from typing import Dict, List, Set
 
 PLANET_RAW_MATERIALS: Dict[str, List[str]] = {
@@ -35,8 +35,9 @@ def select_file():
 	filename = ''
 	files = []
 	count = 1
-	for file in glob.glob("*.csv"):
-		print(f"{count}. {file}")
+	for file in glob.glob("Regions/*.csv"):
+		display_name = file.split("/", 1)[-1]
+		print(f"{count}. {display_name}")
 		files.append(file)
 		count += 1
 	print()
@@ -156,7 +157,9 @@ def show_system_details(system: SolarSystem):
 	print(f"{'='*40}\n")
 
 def save_results_csv(matches: List[SolarSystem], filename: str):
-	with open(filename, 'w', newline='') as f:
+	os.makedirs("SavedResults", exist_ok=True)
+	filepath = os.path.join("SavedResults", filename)
+	with open(filepath, 'w', newline='') as f:
 		writer = csv.writer(f)
 		header = ["Constellation", "SolarSystem"] + list(PLANET_RAW_MATERIALS.keys())
 		writer.writerow(header)
@@ -165,13 +168,57 @@ def save_results_csv(matches: List[SolarSystem], filename: str):
 			for ptype in PLANET_RAW_MATERIALS.keys():
 				row.append(sys.planets.get(ptype, 0))
 			writer.writerow(row)
-	print(f"Results saved to {filename}")
+	print(f"Results saved to {filepath}")
+
+# def save_results_csv(matches: List[SolarSystem], filename: str):
+#	with open(filename, 'w', newline='') as f:
+#		writer = csv.writer(f)
+#		header = ["Constellation", "SolarSystem"] + list(PLANET_RAW_MATERIALS.keys())
+#		writer.writerow(header)
+#		for sys in matches:
+#			row = [sys.constellation, sys.name]
+#			for ptype in PLANET_RAW_MATERIALS.keys():
+#				row.append(sys.planets.get(ptype, 0))
+#			writer.writerow(row)
+#	print(f"Results saved to {filename}")
 
 def save_query_state(csv_file: str, target_materials: List[str], filename: str):
+	os.makedirs("SavedQueries", exist_ok=True)
+	filepath = os.path.join("SavedQueries", filename)
+	if not filepath.lower().endswith(".json"):
+		filepath += ".json"
 	state = {"csv_file": csv_file, "target_materials": target_materials}
-	with open(filename, "w") as f:
-		json.dump(state, f)
-	print(f"Query saved to {filename}")
+	with open(filepath, "w") as f:
+		json.dump(state, f, indent=2)
+	print(f"Query saved to {filepath}")
+
+def select_saved_query() -> str:
+	os.makedirs("SavedQueries", exist_ok=True)
+	files = sorted(glob.glob("SavedQueries/*.json"))
+	if not files:
+		print("No saved queries found.")
+		return None
+	print("\nAvailable saved queries:")
+	for i, fpath in enumerate(files, 1):
+		fname = os.path.basename(fpath)
+		print(f"{i}. {fname}")
+	print()
+	try:
+		choice = int(input("Select query to load (enter number): ").strip())
+		if 1 <= choice <= len(files):
+			return files[choice - 1]
+		else:
+			print("Invalid choice.")
+			return None
+	except ValueError:
+		print("Invalid input.")
+		return None
+
+# def save_query_state(csv_file: str, target_materials: List[str], filename: str):
+#	state = {"csv_file": csv_file, "target_materials": target_materials}
+#	with open(filename, "w") as f:
+#		json.dump(state, f)
+#	print(f"Query saved to {filename}")
 
 def load_query_state(filename: str):
 	with open(filename, "r") as f:
@@ -181,12 +228,23 @@ def load_query_state(filename: str):
 if __name__ == "__main__":
 	print("Do you want to load a previous query? (Y/N)")
 	if input().strip().upper() == "Y":
-		query_file = input("Enter query filename: ").strip()
+		query_file = select_saved_query()
+		if not query_file:
+			print("No query selected or none available. Exiting...")
+			sys.exit()
 		csv_file, target_materials = load_query_state(query_file)
 		print(f"Loaded previous query: {csv_file} with materials {target_materials}")
 	else:
 		csv_file = select_file()
 		target_materials = get_target_materials()
+	# print("Do you want to load a previous query? (Y/N)")
+	# if input().strip().upper() == "Y":
+	# 	query_file = input("Enter query filename: ").strip()
+	# 	csv_file, target_materials = load_query_state(query_file)
+	# 	print(f"Loaded previous query: {csv_file} with materials {target_materials}")
+	# else:
+	# 	csv_file = select_file()
+	# 	target_materials = get_target_materials()
 	systems = load_systems_from_csv(csv_file)
 	matches = find_systems_with_materials(systems, target_materials)
 	print(f"\nFound {len(matches)} systems matching {target_materials}:")
@@ -214,30 +272,3 @@ if __name__ == "__main__":
 						print("Invalid number.")
 				except ValueError:
 					print("Invalid input. Please enter a number, 'Q', 'S', or 'SQ'.")
-
-# if __name__ == "__main__":
-# 	filename = select_file()
-# 	systems = load_systems_from_csv(filename)
-# 	target_materials = get_target_materials()
-# 	matches = find_systems_with_materials(systems, target_materials)
-# 	# print(f"Found {len(matches)} systems matching {target_materials}:")
-# 	# for system in matches:
-# 	# 	print(f" - {system}")
-# 	print(f"\nFound {len(matches)} systems matching {target_materials}:")
-# 	if not matches:
-# 		print("No matching systems found.")
-# 	else:
-# 		for i, system in enumerate(matches, 1):
-# 			print(f"{i}. {system}")
-# 		while True:
-# 			choice = input("\nEnter system number for details (or 'Q' to quit): ").strip().upper()
-# 			if choice == "Q":
-# 				break
-# 			try:
-# 				idx = int(choice) - 1
-# 				if 0 <= idx < len(matches):
-# 					show_system_details(matches[idx])
-# 				else:
-# 					print("Invalid number.")
-# 			except ValueError:
-# 				print("Invalid input. Please enter a number or 'Q'.")
