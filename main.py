@@ -52,28 +52,19 @@ def select_file():
 def load_systems_from_csv(filepath: str) -> List[SolarSystem]:
 	systems = []
 	with open(filepath, newline='', encoding='utf-8-sig') as f:
-		# reader = csv.DictReader(f, delimiter='\t')
 		reader = csv.DictReader(f, delimiter=',')
-
-		# Clean column names (strip whitespace and weird BOMs)
 		reader.fieldnames = [name.strip() for name in reader.fieldnames]
-
 		last_constellation = None
 		for row in reader:
-			# Strip keys/values
 			row = {k.strip(): (v.strip() if v else '') for k, v in row.items()}
-
-			# Some rows don't repeat constellation name → reuse last seen one
 			constellation = row.get("Constellation", "")
 			if constellation:
 				last_constellation = constellation
 			else:
 				constellation = last_constellation or "Unknown"
-
 			system_name = row.get("SolarSystem", "").strip()
 			if not system_name:
-				continue  # skip blank lines
-
+				continue
 			planet_counts = {}
 			for planet_type in PLANET_RAW_MATERIALS.keys():
 				val = row.get(planet_type, "")
@@ -81,8 +72,7 @@ def load_systems_from_csv(filepath: str) -> List[SolarSystem]:
 					try:
 						planet_counts[planet_type] = int(val)
 					except ValueError:
-						pass  # ignore malformed numbers
-
+						pass
 			systems.append(SolarSystem(constellation, system_name, planet_counts))
 	return systems
 
@@ -170,18 +160,6 @@ def save_results_csv(matches: List[SolarSystem], filename: str):
 			writer.writerow(row)
 	print(f"Results saved to {filepath}")
 
-# def save_results_csv(matches: List[SolarSystem], filename: str):
-#	with open(filename, 'w', newline='') as f:
-#		writer = csv.writer(f)
-#		header = ["Constellation", "SolarSystem"] + list(PLANET_RAW_MATERIALS.keys())
-#		writer.writerow(header)
-#		for sys in matches:
-#			row = [sys.constellation, sys.name]
-#			for ptype in PLANET_RAW_MATERIALS.keys():
-#				row.append(sys.planets.get(ptype, 0))
-#			writer.writerow(row)
-#	print(f"Results saved to {filename}")
-
 def save_query_state(csv_file: str, target_materials: List[str], filename: str):
 	os.makedirs("SavedQueries", exist_ok=True)
 	filepath = os.path.join("SavedQueries", filename)
@@ -214,12 +192,6 @@ def select_saved_query() -> str:
 		print("Invalid input.")
 		return None
 
-# def save_query_state(csv_file: str, target_materials: List[str], filename: str):
-#	state = {"csv_file": csv_file, "target_materials": target_materials}
-#	with open(filename, "w") as f:
-#		json.dump(state, f)
-#	print(f"Query saved to {filename}")
-
 def load_query_state(filename: str):
 	with open(filename, "r") as f:
 		state = json.load(f)
@@ -237,14 +209,6 @@ if __name__ == "__main__":
 	else:
 		csv_file = select_file()
 		target_materials = get_target_materials()
-	# print("Do you want to load a previous query? (Y/N)")
-	# if input().strip().upper() == "Y":
-	# 	query_file = input("Enter query filename: ").strip()
-	# 	csv_file, target_materials = load_query_state(query_file)
-	# 	print(f"Loaded previous query: {csv_file} with materials {target_materials}")
-	# else:
-	# 	csv_file = select_file()
-	# 	target_materials = get_target_materials()
 	systems = load_systems_from_csv(csv_file)
 	matches = find_systems_with_materials(systems, target_materials)
 	print(f"\nFound {len(matches)} systems matching {target_materials}:")
