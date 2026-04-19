@@ -1,3 +1,6 @@
+> [!WARNING]
+> This repository has been migrated to https://codeberg.org/promitheas/eve-online-pi-planning
+
 # PI Planner
 
 This project aims to help identify solar systems that contain specific combinations of planetary raw PI (P0), based on CSV input data. It supports saving and reloading previous queries, and exporting results to CSV files.
